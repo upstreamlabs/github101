@@ -6,6 +6,10 @@ on:
     - cron: '0 0 * * *'
   workflow_dispatch:
     # 允许手动触发
+  push:
+    # 每次push都会触发CI
+    branches:
+      - main
 
 jobs:
   calculate-score:
@@ -121,13 +125,16 @@ jobs:
           OWNER=$(echo $REPO_NAME | cut -d'/' -f1)
           REPO=$(echo $REPO_NAME | cut -d'/' -f2)
           
+          # 获取触发CI的用户
+          ACTOR=${{ github.actor }}
+          
           # 创建JSON数据
           SUMMARY=$(cat <<EOF
           {
             "channel": "github",
             "courseId": 1948,
             "ext": "aaa",
-            "name": "$OWNER",
+            "name": "$ACTOR",
             "score": ${{ env.score }},
             "totalScore": 1000
           }
@@ -135,7 +142,7 @@ jobs:
           )
           
           # 发送到远程API
-          curl -X POST "https://api.example.com/score" \
+          curl -X POST "https://api.opencamp.cn/web/api/courseRank/createByThirdToken" \
             -H "accept: application/json;charset=utf-8" \
             -H "Content-Type: application/json" \
             -H "token: e3619ccddafc47589bbe788ca31a2df0" \

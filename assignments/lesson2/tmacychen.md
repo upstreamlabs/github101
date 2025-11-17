@@ -48,6 +48,8 @@ git config --global core.autocrlf input  # Linux/macOS 用户：提交时转换�
 
 目前我使用的是 MacOS 系统，截图如下：
 
+<img width="664" height="58" alt="2025-11-17_17-00-41" src="https://github.com/user-attachments/assets/ab9aea8d-0e76-443f-b483-70bd3508f71c" />
+
 
 ## 4. Git命令使用过程总结
 

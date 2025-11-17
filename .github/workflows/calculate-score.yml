@@ -7,6 +7,10 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - main
 
 jobs:
   calculate-score:
@@ -48,6 +52,57 @@ jobs:
           fi
           echo "article_bonus=$ARTICLE_BONUS" >> $GITHUB_ENV
 
+      - name: Check for lesson assignments
+        id: check_lessons
+        if: github.event_name == 'pull_request'
+        run: |
+          REPO_NAME=${{ github.repository }}
+          OWNER=$(echo $REPO_NAME | cut -d'/' -f1)
+          REPO=$(echo $REPO_NAME | cut -d'/' -f2)
+          
+          LESSON1_EXISTS=0
+          LESSON2_EXISTS=0
+          
+          # Check lesson1 assignment
+          LESSON1_RESPONSE=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/$OWNER/$REPO/contents/assignments/lesson1")
+          
+          if echo "$LESSON1_RESPONSE" | jq -r '.[].name' 2>/dev/null | grep -q "^$OWNER\.md$"; then
+            LESSON1_EXISTS=1
+            echo "Found lesson1 assignment: assignments/lesson1/$OWNER.md"
+          else
+            echo "No lesson1 assignment found for $OWNER"
+          fi
+          
+          # Check lesson2 assignment
+          LESSON2_RESPONSE=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/$OWNER/$REPO/contents/assignments/lesson2")
+          
+          if echo "$LESSON2_RESPONSE" | jq -r '.[].name' 2>/dev/null | grep -q "^$OWNER\.md$"; then
+            LESSON2_EXISTS=1
+            echo "Found lesson2 assignment: assignments/lesson2/$OWNER.md"
+          else
+            echo "No lesson2 assignment found for $OWNER"
+          fi
+          
+          echo "lesson1_exists=$LESSON1_EXISTS" >> $GITHUB_ENV
+          echo "lesson2_exists=$LESSON2_EXISTS" >> $GITHUB_ENV
+          
+          if [ $LESSON1_EXISTS -eq 1 ]; then
+            LESSON1_SCORE=10
+          else
+            LESSON1_SCORE=0
+          fi
+          
+          if [ $LESSON2_EXISTS -eq 1 ]; then
+            LESSON2_SCORE=10
+          else
+            LESSON2_SCORE=0
+          fi
+          
+          echo "lesson1_score=$LESSON1_SCORE" >> $GITHUB_ENV
+          echo "lesson2_score=$LESSON2_SCORE" >> $GITHUB_ENV
+
       - name: Calculate score based on GitHub metrics
         id: calculate
         run: |
@@ -81,22 +136,29 @@ jobs:
           PR_WEIGHT=30
           
           ARTICLE_BONUS=${{ env.article_bonus }}
+          LESSON1_SCORE=${{ env.lesson1_score || 0 }}
+          LESSON2_SCORE=${{ env.lesson2_score || 0 }}
           
           SCORE=$((STARS * STAR_WEIGHT + CLOSED_ISSUES * ISSUE_WEIGHT + PR_COUNT * PR_WEIGHT + ARTICLE_BONUS))
+          LESSON_SCORE=$((LESSON1_SCORE + LESSON2_SCORE))
           
           echo "=================== 学员成绩报告 ==================="
           echo "Stars: $STARS (权重: $STAR_WEIGHT) = $((STARS * STAR_WEIGHT)) 分"
           echo "已解决的Issues: $CLOSED_ISSUES (权重: $ISSUE_WEIGHT) = $((CLOSED_ISSUES * ISSUE_WEIGHT)) 分"
           echo "Pull Requests: $PR_COUNT (权重: $PR_WEIGHT) = $((PR_COUNT * PR_WEIGHT)) 分"
-          echo "个人文章提交: $ARTICLE_EXISTS (权重: 20) = $ARTICLE_BONUS 分"
+          echo "个人文章提交: ${{ env.article_exists }} (权重: 20) = $ARTICLE_BONUS 分"
+          echo "Lesson1作业: ${{ env.lesson1_exists }} (权重: 10) = $LESSON1_SCORE 分"
+          echo "Lesson2作业: ${{ env.lesson2_exists }} (权重: 10) = $LESSON2_SCORE 分"
           echo "=================================================="
           echo "总分: $SCORE 分"
+          echo "课程作业总分: $LESSON_SCORE 分"
           echo "更新时间: $(date)"
           
           echo "stars=$STARS" >> $GITHUB_ENV
           echo "issues=$CLOSED_ISSUES" >> $GITHUB_ENV
           echo "prs=$PR_COUNT" >> $GITHUB_ENV
           echo "score=$SCORE" >> $GITHUB_ENV
+          echo "lesson_score=$LESSON_SCORE" >> $GITHUB_ENV
           
       - name: Post summary JSON to remote API
         run: |
@@ -131,3 +193,30 @@ jobs:
             -v
             
           rm /tmp/decrypted-config.env
+
+      - name: Post lesson assignments score to remote API
+        if: github.event_name == 'pull_request'
+        run: |
+          ACTOR=${{ github.actor }}
+          API_URL="https://api.opencamp.cn/web/api/courseRank/createByThirdToken"
+          API_TOKEN="f7071e69e65d4d0587e0333420ca84a0"
+          COURSE_ID=1945
+          
+          LESSON_SUMMARY=$(cat <<EOF
+          {
+            "channel": "github",
+            "courseId": $COURSE_ID,
+            "ext": "lesson_assignments",
+            "name": "$ACTOR",
+            "score": ${{ env.lesson_score }},
+            "totalScore": 20
+          }
+          EOF
+          )
+          
+          curl -X POST "$API_URL" \
+            -H "accept: application/json;charset=utf-8" \
+            -H "Content-Type: application/json" \
+            -H "token: $API_TOKEN" \
+            -d "$LESSON_SUMMARY" \
+            -v

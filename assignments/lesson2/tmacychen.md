@@ -53,9 +53,15 @@ git config --global core.autocrlf input  # Linux/macOS 用户：提交时转换�
 
 ## 4. Git命令使用过程总结
 
-（在此处总结使用Git命令的过程，包括但不限于以下操作：
 
-### 常用命令
+ 本次作业使用 Git 的操作过程：
+1. 使用 clone 命令将仓库下载到本地：`git clone git@github.com:tmacychen/github101.git`
+2. 进入 lesson2 目录下，修改作业文件，完成作业内容
+3. 使用 add 命令添加本次作业修改到暂存区: `git add assignments/lesson2/tmacychen.md`
+4. 使用 commit 命令添加一次提交的 log: `git commit -m "finish lesson2 homework"`
+5. 使用 push 命令提交:`git push`
+
+### Git 常用命令
 - git clone: 克隆远程仓库到本地
 - git add: 添加文件到暂存区
 - git commit: 提交更改到本地仓库
@@ -64,7 +70,7 @@ git config --global core.autocrlf input  # Linux/macOS 用户：提交时转换�
 - git tag : 创建一个快照，将当前状态保存在 tag 中，一般用于版本发布打标签。
 - git log :查看当前分支的变更历史记录，可以分页查看
 
-### 分支管理
+#### 分支管理
 
 - git branch :查看当前本地分支
 - git branch -a : 查看分支，包括本地分支与远程分支
@@ -75,7 +81,7 @@ git config --global core.autocrlf input  # Linux/macOS 用户：提交时转换�
 - git rebase : 重新梳理分支的变更记录，比如合并某些 commit，删除某些 commit等。
 - git cherry-pick：将某个或某些commit 从一个分支中挑出来，合入另一个分支。
 
-### 文件修改与恢复
+#### 文件修改与恢复
 
 - git restore :恢复某个文件,不改变提交历史，仅操作工作区域缓存区
 - git reset : 回退提交历史，移动分支指针来修改提交记录。

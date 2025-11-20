@@ -57,10 +57,10 @@
 
 ## 四、自我介绍：以科技为桥，拥抱开源生态
 
-- 我从植物科学跨界技术领域。科研背景让我具备严谨思维与超强自学能力，曾发表论文， 科学是我探索的基石。
-https://cdnsciencepub.com/doi/10.1139/cjps-2024-0242
+- 我从植物科学跨界技术领域。科研背景让我具备严谨思维与超强自学能力， 科学是我探索的基石。
+- https://cdnsciencepub.com/doi/10.1139/cjps-2024-0242
 
-- 在任生产主管岗期间，通过自学和在ChatGPT的帮助下，开发了大麻企业数据系统，使库存效率提升35%，支撑多团队协作。此前在Quality Assurance等岗积累的合规与问题解决能力，与开源理念高度契合。
-https://github.com/arnoldzzy/SQL-EXCEL-based-cannabis-data-system-
+- 在任生产主管岗期间，通过自学和在ChatGPT的帮助下，我独自开发了大麻企业的数据系统，使库存效率提升35%，指导多团队协作。此前在Quality Assurance等岗积累的合规与问题解决能力，与开源理念高度契合。
+- https://github.com/arnoldzzy/SQL-EXCEL-based-cannabis-data-system-
 
 开源之路，行则将至。我期待与更多爱好者同行，共建开放繁荣的技术生态。

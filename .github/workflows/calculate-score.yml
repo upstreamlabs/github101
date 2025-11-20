@@ -7,6 +7,10 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - main
 
 jobs:
   calculate-score:
@@ -23,23 +27,36 @@ jobs:
       - name: Check for student's article
         id: check_article
         run: |
-          REPO_NAME=${{ github.repository }}
-          OWNER=$(echo $REPO_NAME | cut -d'/' -f1)
-          REPO=$(echo $REPO_NAME | cut -d'/' -f2)
+          # 确定要检测的仓库和学员用户名
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            # PR 事件：检测 PR 来源仓库（学员 Fork 的仓库）
+            CHECK_OWNER=${{ github.event.pull_request.head.repo.owner.login }}
+            CHECK_REPO=${{ github.event.pull_request.head.repo.name }}
+            STUDENT_NAME=${{ github.actor }}
+            echo "PR 模式：检测仓库 $CHECK_OWNER/$CHECK_REPO，学员 $STUDENT_NAME"
+          else
+            # 非 PR 事件：检测当前仓库
+            REPO_NAME=${{ github.repository }}
+            CHECK_OWNER=$(echo $REPO_NAME | cut -d'/' -f1)
+            CHECK_REPO=$(echo $REPO_NAME | cut -d'/' -f2)
+            STUDENT_NAME=$CHECK_OWNER
+            echo "非 PR 模式：检测仓库 $CHECK_OWNER/$CHECK_REPO，学员 $STUDENT_NAME"
+          fi
           
           ARTICLE_EXISTS=0
           
           CONTENTS_RESPONSE=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/repos/$OWNER/$REPO/contents")
+            "https://api.github.com/repos/$CHECK_OWNER/$CHECK_REPO/contents")
           
-          if echo "$CONTENTS_RESPONSE" | jq -r '.[].name' | grep -q "^$OWNER\.md$"; then
+          if echo "$CONTENTS_RESPONSE" | jq -r '.[].name' | grep -q "^$STUDENT_NAME\.md$"; then
             ARTICLE_EXISTS=1
-            echo "Found article file: $OWNER.md"
+            echo "Found article file: $STUDENT_NAME.md"
           else
-            echo "No article file named $OWNER.md found"
+            echo "No article file named $STUDENT_NAME.md found"
           fi
           
           echo "article_exists=$ARTICLE_EXISTS" >> $GITHUB_ENV
+          echo "student_name=$STUDENT_NAME" >> $GITHUB_ENV
           
           if [ $ARTICLE_EXISTS -eq 1 ]; then
             ARTICLE_BONUS=20
@@ -48,32 +65,97 @@ jobs:
           fi
           echo "article_bonus=$ARTICLE_BONUS" >> $GITHUB_ENV
 
+      - name: Check for lesson assignments
+        id: check_lessons
+        if: github.event_name == 'pull_request'
+        run: |
+          # PR 事件：检测 PR 来源仓库（学员 Fork 的仓库）
+          CHECK_OWNER=${{ github.event.pull_request.head.repo.owner.login }}
+          CHECK_REPO=${{ github.event.pull_request.head.repo.name }}
+          STUDENT_NAME=${{ github.actor }}
+          
+          echo "检测学员 $STUDENT_NAME 在仓库 $CHECK_OWNER/$CHECK_REPO 中的作业"
+          
+          LESSON1_EXISTS=0
+          LESSON2_EXISTS=0
+          
+          # Check lesson1 assignment
+          LESSON1_RESPONSE=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/$CHECK_OWNER/$CHECK_REPO/contents/assignments/lesson1")
+          
+          if echo "$LESSON1_RESPONSE" | jq -r '.[].name' 2>/dev/null | grep -q "^$STUDENT_NAME\.md$"; then
+            LESSON1_EXISTS=1
+            echo "Found lesson1 assignment: assignments/lesson1/$STUDENT_NAME.md"
+          else
+            echo "No lesson1 assignment found for $STUDENT_NAME"
+          fi
+          
+          # Check lesson2 assignment
+          LESSON2_RESPONSE=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/$CHECK_OWNER/$CHECK_REPO/contents/assignments/lesson2")
+          
+          if echo "$LESSON2_RESPONSE" | jq -r '.[].name' 2>/dev/null | grep -q "^$STUDENT_NAME\.md$"; then
+            LESSON2_EXISTS=1
+            echo "Found lesson2 assignment: assignments/lesson2/$STUDENT_NAME.md"
+          else
+            echo "No lesson2 assignment found for $STUDENT_NAME"
+          fi
+          
+          echo "lesson1_exists=$LESSON1_EXISTS" >> $GITHUB_ENV
+          echo "lesson2_exists=$LESSON2_EXISTS" >> $GITHUB_ENV
+          
+          if [ $LESSON1_EXISTS -eq 1 ]; then
+            LESSON1_SCORE=10
+          else
+            LESSON1_SCORE=0
+          fi
+          
+          if [ $LESSON2_EXISTS -eq 1 ]; then
+            LESSON2_SCORE=10
+          else
+            LESSON2_SCORE=0
+          fi
+          
+          echo "lesson1_score=$LESSON1_SCORE" >> $GITHUB_ENV
+          echo "lesson2_score=$LESSON2_SCORE" >> $GITHUB_ENV
+
       - name: Calculate score based on GitHub metrics
         id: calculate
         run: |
-          REPO_NAME=${{ github.repository }}
-          OWNER=$(echo $REPO_NAME | cut -d'/' -f1)
-          REPO=$(echo $REPO_NAME | cut -d'/' -f2)
+          # 确定要统计的仓库
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            # PR 事件：统计 PR 来源仓库（学员 Fork 的仓库）的数据
+            CHECK_OWNER=${{ github.event.pull_request.head.repo.owner.login }}
+            CHECK_REPO=${{ github.event.pull_request.head.repo.name }}
+            STUDENT_NAME=${{ github.actor }}
+          else
+            # 非 PR 事件：统计当前仓库
+            REPO_NAME=${{ github.repository }}
+            CHECK_OWNER=$(echo $REPO_NAME | cut -d'/' -f1)
+            CHECK_REPO=$(echo $REPO_NAME | cut -d'/' -f2)
+            STUDENT_NAME=$CHECK_OWNER
+          fi
           
-          echo "Repository: $OWNER/$REPO"
+          echo "Repository: $CHECK_OWNER/$CHECK_REPO"
+          echo "Student: $STUDENT_NAME"
           
           STARS_RESPONSE=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/repos/$OWNER/$REPO")
+            "https://api.github.com/repos/$CHECK_OWNER/$CHECK_REPO")
           STARS=$(echo $STARS_RESPONSE | jq -r '.stargazers_count // 0')
           echo "Stars response: $STARS_RESPONSE"
           
           ALL_ISSUES_RESPONSE=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/repos/$OWNER/$REPO/issues?state=all&per_page=100")
+            "https://api.github.com/repos/$CHECK_OWNER/$CHECK_REPO/issues?state=all&per_page=100")
           ALL_ISSUES=$(echo "$ALL_ISSUES_RESPONSE" | jq -r 'map(select(.pull_request == null)) | length')
           
           OPEN_ISSUES_RESPONSE=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/repos/$OWNER/$REPO/issues?state=open&per_page=100")
+            "https://api.github.com/repos/$CHECK_OWNER/$CHECK_REPO/issues?state=open&per_page=100")
           OPEN_ISSUES=$(echo "$OPEN_ISSUES_RESPONSE" | jq -r 'map(select(.pull_request == null)) | length')
           
           CLOSED_ISSUES=$((ALL_ISSUES - OPEN_ISSUES))
           
           PRS_RESPONSE=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/repos/$OWNER/$REPO/pulls?state=all&per_page=100")
+            "https://api.github.com/repos/$CHECK_OWNER/$CHECK_REPO/pulls?state=all&per_page=100")
           PR_COUNT=$(echo "$PRS_RESPONSE" | jq -r 'length')
           
           STAR_WEIGHT=10
@@ -81,31 +163,36 @@ jobs:
           PR_WEIGHT=30
           
           ARTICLE_BONUS=${{ env.article_bonus }}
+          LESSON1_SCORE=${{ env.lesson1_score || 0 }}
+          LESSON2_SCORE=${{ env.lesson2_score || 0 }}
           
           SCORE=$((STARS * STAR_WEIGHT + CLOSED_ISSUES * ISSUE_WEIGHT + PR_COUNT * PR_WEIGHT + ARTICLE_BONUS))
+          LESSON_SCORE=$((LESSON1_SCORE + LESSON2_SCORE))
           
           echo "=================== 学员成绩报告 ==================="
           echo "Stars: $STARS (权重: $STAR_WEIGHT) = $((STARS * STAR_WEIGHT)) 分"
           echo "已解决的Issues: $CLOSED_ISSUES (权重: $ISSUE_WEIGHT) = $((CLOSED_ISSUES * ISSUE_WEIGHT)) 分"
           echo "Pull Requests: $PR_COUNT (权重: $PR_WEIGHT) = $((PR_COUNT * PR_WEIGHT)) 分"
-          echo "个人文章提交: $ARTICLE_EXISTS (权重: 20) = $ARTICLE_BONUS 分"
+          echo "个人文章提交: ${{ env.article_exists }} (权重: 20) = $ARTICLE_BONUS 分"
+          echo "Lesson1作业: ${{ env.lesson1_exists }} (权重: 10) = $LESSON1_SCORE 分"
+          echo "Lesson2作业: ${{ env.lesson2_exists }} (权重: 10) = $LESSON2_SCORE 分"
           echo "=================================================="
           echo "总分: $SCORE 分"
+          echo "课程作业总分: $LESSON_SCORE 分"
           echo "更新时间: $(date)"
           
           echo "stars=$STARS" >> $GITHUB_ENV
           echo "issues=$CLOSED_ISSUES" >> $GITHUB_ENV
           echo "prs=$PR_COUNT" >> $GITHUB_ENV
           echo "score=$SCORE" >> $GITHUB_ENV
+          echo "lesson_score=$LESSON_SCORE" >> $GITHUB_ENV
+          echo "student_name=$STUDENT_NAME" >> $GITHUB_ENV
           
       - name: Post summary JSON to remote API
         run: |
-          REPO_NAME=${{ github.repository }}
-          OWNER=$(echo $REPO_NAME | cut -d'/' -f1)
-          REPO=$(echo $REPO_NAME | cut -d'/' -f2)
+          STUDENT_NAME=${{ env.student_name }}
           
-          ACTOR=${{ github.actor }}
-          
+          # 使用加密的配置信息（base64 编码）
           ENCRYPTED_CONFIG="QVBJX1RPS0VOPWUzNjE5Y2NkZGFmYzQ3NTg5YmJlNzg4Y2EzMWEyZGYwCkFQSV9VUkw9aHR0cHM6Ly9hcGkub3BlbmNhbXAuY24vd2ViL2FwaS9jb3Vyc2VSYW5rL2NyZWF0ZUJ5VGhpcmRUb2tlbgpDT1VSU0VfSUQ9MTk0OAo="
           
           echo "$ENCRYPTED_CONFIG" | base64 -d > /tmp/decrypted-config.env
@@ -116,7 +203,7 @@ jobs:
             "channel": "github",
             "courseId": $COURSE_ID,
             "ext": "aaa",
-            "name": "$ACTOR",
+            "name": "$STUDENT_NAME",
             "score": ${{ env.score }},
             "totalScore": 9999
           }
@@ -131,3 +218,38 @@ jobs:
             -v
             
           rm /tmp/decrypted-config.env
+
+      - name: Post lesson assignments score to remote API
+        if: github.event_name == 'pull_request'
+        run: |
+          STUDENT_NAME=${{ env.student_name }}
+          
+          # 使用加密的配置信息（base64 编码）
+          # 原始内容：API_URL=https://api.opencamp.cn/web/api/courseRank/createByThirdToken
+          # API_TOKEN=f7071e69e65d4d0587e0333420ca84a0
+          # COURSE_ID=1945
+          ENCRYPTED_LESSON_CONFIG="QVBJX1VSTD1odHRwczovL2FwaS5vcGVuY2FtcC5jbi93ZWIvYXBpL2NvdXJzZVJhbmsvY3JlYXRlQnlUaGlyZFRva2VuCkFQSV9UT0tFTj1mNzA3MWU2OWU2NWQ0ZDA1ODdlMDMzMzQyMGNhODRhMApDT1VSU0VfSUQ9MTk0NQo="
+          
+          echo "$ENCRYPTED_LESSON_CONFIG" | base64 -d > /tmp/lesson-config.env
+          source /tmp/lesson-config.env
+          
+          LESSON_SUMMARY=$(cat <<EOF
+          {
+            "channel": "github",
+            "courseId": $COURSE_ID,
+            "ext": "lesson_assignments",
+            "name": "$STUDENT_NAME",
+            "score": ${{ env.lesson_score }},
+            "totalScore": 20
+          }
+          EOF
+          )
+          
+          curl -X POST "$API_URL" \
+            -H "accept: application/json;charset=utf-8" \
+            -H "Content-Type: application/json" \
+            -H "token: $API_TOKEN" \
+            -d "$LESSON_SUMMARY" \
+            -v
+            
+          rm /tmp/lesson-config.env

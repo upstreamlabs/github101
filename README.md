@@ -37,7 +37,7 @@ Upstream 这个代码仓用于帮助商业训练营的同学们完成作业。
 
 ### 作业要求
 1. 完成版本控制工具git安装，通过执行`git --version`查看版本信息，并截图
-2. fork仓库https://github.com/upstreamlabs/github101到自己账号下，将个人账号下的github101（可以是fork时自定义项目名）克隆到本地（指操作设备），在[assignments/lesson2](assignments/lesson2)目录下创建以个人账号（GitHub账号）命名的markdown文件，在文件中撰写git安装过程、遇到的问题及解决方法，以及使用命令查看版本信息的截图。
+2. fork仓库 https://github.com/upstreamlabs/github101 到自己账号下，将个人账号下的github101（可以是fork时自定义项目名）克隆到本地（指操作设备），在[assignments/lesson2](assignments/lesson2)目录下创建以个人账号（GitHub账号）命名的markdown文件，在文件中撰写git安装过程、遇到的问题及解决方法，以及使用命令查看版本信息的截图。
 3. 通过git命令将本地仓库提交到远程仓库（个人账号），向远程仓库（组织仓）提交PR合入请求。
 4. 将使用git命令过程总结记录到第2步中的markdown文件，最后再次执行第3步操作提交。
 

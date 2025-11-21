@@ -24,3 +24,11 @@
 
 ### 6. 个人见解
 （分享您对该商业模式的看法和思考）
+
+---
+
+## CI 自动评分与运行指引
+- 课程作业检测仅在 PR 到 main 时执行，请通过 Pull Request 提交本文件。
+- 文件命名：assignments/lesson1/{你的GitHub用户名}.md。
+- 自动评分工作流： [.github/workflows/calculate-score.yml](../../.github/workflows/calculate-score.yml)。
+- 首次 Fork 后：进入 Actions → 选择 “Calculate Student Score” → 点击 “Run workflow” 并选择 main → 在日志中查看成绩。

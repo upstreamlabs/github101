@@ -1,6 +1,6 @@
 # Git工具安装与使用报告
 
-## 学员GitHub用户名: example-user
+## 学员GitHub用户名: sinlinx
 
 ## 1. Git安装过程
 

@@ -1,6 +1,6 @@
 # Git工具安装与使用报告
 
-## 学员GitHub用户名: example-user
+## 学员GitHub用户名: sinlinx
 
 ## 1. Git安装过程
 
@@ -13,6 +13,8 @@
 ## 3. 版本信息截图
 
 （在此处插入执行`git --version`命令后的截图）
+
+<img width="620" height="222" alt="e848582d7460171fb01daca5e7c951c0" src="https://github.com/user-attachments/assets/85347750-21a2-4aa0-97e3-f55bf34d7165" />
 
 ## 4. Git命令使用过程总结
 

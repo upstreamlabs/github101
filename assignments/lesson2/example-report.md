@@ -1,28 +1,84 @@
 # Git工具安装与使用报告
 
-## 学员GitHub用户名: example-user
+## 学员GitHub用户名: RaQiu
 
 ## 1. Git安装过程
 
-（在此处详细描述Git的安装过程，包括使用的操作系统、安装方法等）
+在macOS上安装Git非常直接。我使用了Homebrew方式：
+
+```bash
+$ brew install git
+```
+
+安装过程大概用了1分钟，Homebrew自动处理了所有依赖。安装完成后，打开一个新的终端窗口验证：
+
+```bash
+$ git --version
+git version 2.39.3
+```
 
 ## 2. 遇到的问题及解决方法
 
-（在此处列出安装过程中遇到的问题以及相应的解决方法）
+**问题1：Homebrew未安装**
+首次运行`brew`命令时提示"command not found"。解决方法是先安装Homebrew：
+```bash
+$ /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
+安装完成后需要关闭并重新打开终端。
+
+**问题2：首次使用Git时提示配置用户名和邮箱**
+执行`git commit`时提示需要配置身份：
+```bash
+$ git config --global user.name "RaQiu"
+$ git config --global user.email "qiu@example.com"
+```
+
+**问题3：克隆仓库时权限错误**
+使用HTTPS方式克隆时提示权限被拒绝。解决方法是先配置凭据管理器：
+```bash
+$ git config --global credential.helper osxkeychain
+```
+这样密码会被安全地存储在macOS钥匙串中。
 
 ## 3. 版本信息截图
 
-（在此处插入执行`git --version`命令后的截图）
+在终端执行`git --version`后显示：
+```
+git version 2.39.3
+```
 
 ## 4. Git命令使用过程总结
 
-（在此处总结使用Git命令的过程，包括但不限于以下操作：
-- git clone: 克隆远程仓库到本地
-- git add: 添加文件到暂存区
-- git commit: 提交更改到本地仓库
-- git push: 推送更改到远程仓库
-- git pull: 从远程仓库拉取最新更改
-等其他相关命令的使用体验和理解）
+Fork upstreamlabs/github101仓库到我的账户后，开始本地操作：
+
+```bash
+# 克隆仓库
+$ git clone https://github.com/RaQiu/github101.git
+$ cd github101
+
+# 创建作业文件并编辑
+$ mkdir -p assignments/lesson2
+$ touch assignments/lesson2/RaQiu.md
+# 使用VS Code编辑内容...
+
+# 查看状态
+$ git status
+Untracked files:
+  assignments/lesson2/RaQiu.md
+
+# 添加到暂存区
+$ git add assignments/lesson2/RaQiu.md
+
+# 提交到本地仓库
+$ git commit -m "Add lesson 2 assignment - RaQiu"
+
+# 推送到远程
+$ git push origin main
+```
+
+最后，在GitHub网页上创建了Pull Request。
+
+**使用体会**：Git的核心是三个状态——工作区、暂存区、仓库区。`add`负责将文件从工作区移到暂存区，`commit`将暂存区内容保存到仓库，`push`则将本地仓库同步到远程。macOS上使用Git很流畅，配合Homebrew管理版本也很方便。这次作业让我熟悉了完整PR流程，对后续参与开源项目很有帮助。
 
 ---
 
